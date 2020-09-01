@@ -12,8 +12,6 @@ export interface DownloadProgress {
   receivedBytes: number;
 }
 
-export interface LocalPackage extends Package {}
-
 export interface Package {
   /**
    * The app binary version that this update is dependent on. This is the value that was
@@ -47,6 +45,8 @@ export interface Package {
   packageSize: number;
 }
 
+export interface LocalPackage extends Package {}
+
 export interface RemotePackage extends Package {
   /**
    * The URL at which the package is available for download.
@@ -64,21 +64,18 @@ declare function CodePush(x: any): any;
 declare namespace CodePush {
   /**
    * Asks the CodePush service whether the configured app deployment has an update available.
-   *
-   * @param deploymentKey The deployment key to use to query the CodePush server for an update.
-   *
-   * @param handleBinaryVersionMismatchCallback An optional callback for handling target binary version mismatch
    */
-  function checkForUpdate(
-    deploymentKey?: string,
-  ): Promise<RemotePackage | null>;
+  function checkForUpdate(): Promise<RemotePackage | null>;
 
   /**
    * Retrieves the metadata for an installed update (e.g. description, mandatory).
-   *
-   * @param updateState The state of the update you want to retrieve the metadata for. Defaults to UpdateState.RUNNING.
    */
   function getUpdateMetadata(): Promise<LocalPackage | null>;
+
+  /**
+   * Allows checking for an update, downloading it and installing it, all with a single call.
+   */
+  function sync(): Promise<RemotePackage | null>;
 }
 
 export default CodePush;

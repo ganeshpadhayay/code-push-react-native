@@ -145,6 +145,10 @@ function getPromisifiedSdk(requestFetchAdapter, config) {
 
 let CodePush;
 
+async function sync() {
+  return await checkForUpdate();
+}
+
 function codePushify(options = {}) {
   let React;
   let ReactNative = require('react-native');
@@ -212,6 +216,8 @@ function codePushify(options = {}) {
             );
           }
         }
+        //call to sync
+        sync();
       }
 
       render() {
@@ -249,6 +255,7 @@ if (NativeCodePush) {
     getConfiguration,
     getCurrentPackage,
     getUpdateMetadata,
+    sync,
     log,
   });
 } else {
