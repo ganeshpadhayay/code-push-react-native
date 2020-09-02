@@ -33,6 +33,9 @@ async function checkForUpdate() {
         remotePackage = await downloadAndInstallTheRemoteBundle(
           remoteBundleData,
         );
+      } else {
+        //do nothing
+        console.log('hash match');
       }
     } else {
       //download the latest bundle
@@ -64,26 +67,26 @@ async function downloadAndInstallTheRemoteBundle(remoteBundleData) {
 }
 
 async function getConfiguration() {
-  //     return await NativeCodePush.getConfiguration();
-  return {
-    appVersion: '4.34',
-    clientUniqueId: '87ec101c23c4e956',
-    deploymentKey: 'izyOaXcmgfBJBhog0nncDYAyFjpgp-1q5UlAg',
-    serverUrl: 'https://codepush.appcenter.ms/',
-  };
+  return await NativeCodePush.getConfiguration();
+  // return {
+  //   appVersion: '4.34',
+  //   clientUniqueId: '87ec101c23c4e956',
+  //   deploymentKey: 'izyOaXcmgfBJBhog0nncDYAyFjpgp-1q5UlAg',
+  //   serverUrl: 'https://codepush.appcenter.ms/',
+  // };
 }
 
 //call native function to get the local package data if available
 async function getUpdateMetadata() {
   let updateMetadata = await NativeCodePush.getUpdateMetadata();
-  updateMetadata = {
-    appVersion: '4.34',
-    deploymentKey: 'izyOaXcmgfBJBhog0nncDYAyFjpgp-1q5UlAg',
-    label: 'v4',
-    packageHash:
-      '9b454d631e728fe6a63e326cf383a8dc8727e93dec6f4639751af06980a92fde',
-    packageSize: 490782,
-  };
+  // updateMetadata = {
+  //   appVersion: '4.34',
+  //   deploymentKey: 'izyOaXcmgfBJBhog0nncDYAyFjpgp-1q5UlAg',
+  //   label: 'v4',
+  //   packageHash:
+  //     '9b454d631e728fe6a63e326cf383a8dc8727e93dec6f4639751af06980a92fde',
+  //   packageSize: 490782,
+  // };
   return updateMetadata;
 }
 
