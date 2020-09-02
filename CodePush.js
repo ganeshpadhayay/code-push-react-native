@@ -26,15 +26,17 @@ async function checkForUpdate() {
 
   remotePackage = null;
 
-  if (remoteBundleData) {
+  if (remoteBundleData && remoteBundleData.isAvailable) {
     if (localBundleData) {
       if (localBundleData.packageHash != remoteBundleData.packageHash) {
+        console.log('hash mismatch');
         remotePackage = await downloadAndInstallTheRemoteBundle(
           remoteBundleData,
         );
       }
     } else {
       //download the latest bundle
+      console.log('not local bundle present');
       remotePackage = await downloadAndInstallTheRemoteBundle(remoteBundleData);
     }
   }
@@ -50,11 +52,12 @@ async function downloadAndInstallTheRemoteBundle(remoteBundleData) {
   let downloadedBundleData = await NativeCodePush.downloadUpdate(
     remoteBundleData,
   );
-  console.log('in downloaded bundle data' + downloadedBundleData);
+  console.log('downloadedBundleData');
+  console.log(downloadedBundleData);
   //install it
   await NativeCodePush.installUpdate(
     downloadedBundleData,
-    minimumBackgroundDuration,
+    (minimumBackgroundDuration = 0),
   );
 
   return downloadedBundleData;

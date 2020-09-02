@@ -213,8 +213,7 @@ public class CodePushUpdateManager {
             FileUtils.deleteFileOrFolderSilently(downloadFile);
 
             // Merge contents with current update based on the manifest
-            String diffManifestFilePath = CodePushUtils.appendPathComponent(unzippedFolderPath,
-                    CodePushConstants.DIFF_MANIFEST_FILE_NAME);
+            String diffManifestFilePath = CodePushUtils.appendPathComponent(unzippedFolderPath, CodePushConstants.DIFF_MANIFEST_FILE_NAME);
             boolean isDiffUpdate = FileUtils.fileAtPathExists(diffManifestFilePath);
             if (isDiffUpdate) {
                 String currentPackageFolderPath = getCurrentPackageFolderPath();

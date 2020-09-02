@@ -96,6 +96,8 @@ public class CodePushUpdateUtils {
     }
 
     public static void copyNecessaryFilesFromCurrentPackage(String diffManifestFilePath, String currentPackageFolderPath, String newPackageFolderPath) throws IOException {
+        if (currentPackageFolderPath == null)
+            return;
         FileUtils.copyDirectoryContents(currentPackageFolderPath, newPackageFolderPath);
         JSONObject diffManifest = CodePushUtils.getJsonObjectFromFile(diffManifestFilePath);
         try {
