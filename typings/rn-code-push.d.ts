@@ -28,12 +28,6 @@ export interface Package {
    * The description of the update. This is the same value that you specified in the CLI when you released the update.
    */
   description: string;
-
-  /**
-   * Indicates whether the update is considered mandatory. This is the value that was specified in the CLI when the update was released.
-   */
-  isMandatory: boolean;
-
   /**
    * The SHA hash value of the update.
    */
@@ -43,6 +37,11 @@ export interface Package {
    * The size of the code contained within the update, in bytes.
    */
   packageSize: number;
+
+  /**
+   * label of the package
+   */
+  label: String;
 }
 
 export interface LocalPackage extends Package {}
@@ -71,11 +70,6 @@ declare namespace CodePush {
    * Retrieves the metadata for an installed update (e.g. description, mandatory).
    */
   function getUpdateMetadata(): Promise<LocalPackage | null>;
-
-  /**
-   * Allows checking for an update, downloading it and installing it, all with a single call.
-   */
-  function sync(): Promise<RemotePackage | null>;
 }
 
 export default CodePush;

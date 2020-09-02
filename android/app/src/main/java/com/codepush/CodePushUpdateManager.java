@@ -134,8 +134,7 @@ public class CodePushUpdateManager {
         }
     }
 
-    public void downloadPackage(JSONObject updatePackage, String expectedBundleFileName,
-                                DownloadProgressCallback progressCallback) throws IOException {
+    public void downloadPackage(JSONObject updatePackage, String expectedBundleFileName, DownloadProgressCallback progressCallback) throws IOException {
         String newUpdateHash = updatePackage.optString(CodePushConstants.PACKAGE_HASH_KEY, null);
         String newUpdateFolderPath = getPackageFolderPath(newUpdateHash);
         String newUpdateMetadataPath = CodePushUtils.appendPathComponent(newUpdateFolderPath, CodePushConstants.PACKAGE_FILE_NAME);
@@ -275,15 +274,6 @@ public class CodePushUpdateManager {
 
 
         CodePushUtils.setJSONValueForKey(info, CodePushConstants.CURRENT_PACKAGE_KEY, packageHash);
-        updateCurrentPackageInfo(info);
-    }
-
-    public void rollbackPackage() {
-        JSONObject info = getCurrentPackageInfo();
-        String currentPackageFolderPath = getCurrentPackageFolderPath();
-        FileUtils.deleteDirectoryAtPath(currentPackageFolderPath);
-        CodePushUtils.setJSONValueForKey(info, CodePushConstants.CURRENT_PACKAGE_KEY, info.optString(CodePushConstants.PREVIOUS_PACKAGE_KEY, null));
-        CodePushUtils.setJSONValueForKey(info, CodePushConstants.PREVIOUS_PACKAGE_KEY, null);
         updateCurrentPackageInfo(info);
     }
 

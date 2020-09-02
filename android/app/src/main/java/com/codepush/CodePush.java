@@ -270,11 +270,6 @@ public class CodePush implements ReactPackage {
         sAppVersion = appVersionOverride;
     }
 
-    private void rollbackPackage() {
-        JSONObject failedPackage = mUpdateManager.getCurrentPackage();
-        mUpdateManager.rollbackPackage();
-    }
-
     public void clearUpdates() {
         mUpdateManager.clearUpdates();
     }

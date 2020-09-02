@@ -1,146 +1,102 @@
-import requestFetchAdapter from './request-fetch-adapter';
-import {Platform} from 'react-native';
 import log from './logging';
 import hoistStatics from 'hoist-non-react-statics';
 
 let NativeCodePush = require('react-native').NativeModules.CodePush;
-const PackageMixins = require('./package-mixins')(NativeCodePush);
 
 async function checkForUpdate() {
-  /*
-   * Before we ask the server if an update exists, we
-   * need to retrieve three pieces of information from the
-   * native side: deployment key, app version (e.g. 1.0.1)
-   * and the hash of the currently running update (if there is one).
-   * This allows the client to only receive updates which are targetted
-   * for their specific deployment and version and which are actually
-   * different from the CodePush update they have already installed.
-   */
-  const nativeConfig = await getConfiguration();
-  console.log(`config: ${nativeConfig}`);
+  //get native configuration data
+  let nativeConfig = await getConfiguration();
+  console.log('nativeConfig');
   console.log(nativeConfig);
 
+  //get the local package info
+  let localBundleData = await getUpdateMetadata();
+  console.log('localBundleData');
+  console.log(localBundleData);
+
   //make the network call to check if we have new updates
-  const sdk = getPromisifiedSdk(requestFetchAdapter, nativeConfig);
-  console.log(`sdk:`);
-  console.log(sdk);
-
-  // Use dynamically overridden getCurrentPackage() during tests.
-  const localPackage = await module.exports.getCurrentPackage();
-  console.log(`local package: ${localPackage}`);
-  console.log(localPackage);
-
-  /*
-   * If the app has a previously installed update, and that update
-   * was targetted at the same app version that is currently running,
-   * then we want to use its package hash to determine whether a new
-   * release has been made on the server. Otherwise, we only need
-   * to send the app version to the server, since we are interested
-   * in any updates for current binary version, regardless of hash.
-   */
-  let queryPackage;
-  if (localPackage) {
-    queryPackage = localPackage;
-  } else {
-    queryPackage = {appVersion: config.appVersion};
-    if (Platform.OS === 'ios' && config.packageHash) {
-      queryPackage.packageHash = config.packageHash;
-    }
+  if (localBundleData) {
+    nativeConfig.label = localBundleData.label;
+    nativeConfig.packageHash = localBundleData.packageHash;
   }
 
-  console.log(`query package: ${queryPackage}`);
-  console.log(queryPackage);
+  let remoteBundleData = await getRemoteBundleData(nativeConfig);
+  console.log('remoteBundleData');
+  console.log(remoteBundleData);
 
-  const update = await sdk.queryUpdateWithCurrentPackage(queryPackage);
-  console.log(`update: ${update}`);
-  console.log(update);
+  remotePackage = null;
 
-  /*
-   * There are four cases where checkForUpdate will resolve to null:
-   * ----------------------------------------------------------------
-   * 1) The server said there isn't an update. This is the most common case.
-   * 2) The server said there is an update but it requires a newer binary version.
-   *    This would occur when end-users are running an older binary version than
-   *    is available, and CodePush is making sure they don't get an update that
-   *    potentially wouldn't be compatible with what they are running.
-   * 3) The server said there is an update, but the update's hash is the same as
-   *    the currently running update. This should _never_ happen, unless there is a
-   *    bug in the server, but we're adding this check just to double-check that the
-   *    client app is resilient to a potential issue with the update check.
-   * 4) The server said there is an update, but the update's hash is the same as that
-   *    of the binary's currently running version. This should only happen in Android -
-   *    unlike iOS, we don't attach the binary's hash to the updateCheck request
-   *    because we want to avoid having to install diff updates against the binary's
-   *    version, which we can't do yet on Android.
-   */
-  if (
-    !update ||
-    update.updateAppVersion ||
-    (localPackage && update.packageHash === localPackage.packageHash) ||
-    ((!localPackage || localPackage._isDebugOnly) &&
-      config.packageHash === update.packageHash)
-  ) {
-    if (update && update.updateAppVersion) {
-      log(
-        'An update is available but it is not targeting the binary version of your app.',
-      );
-      if (
-        handleBinaryVersionMismatchCallback &&
-        typeof handleBinaryVersionMismatchCallback === 'function'
-      ) {
-        handleBinaryVersionMismatchCallback(update);
+  if (remoteBundleData) {
+    if (localBundleData) {
+      if (localBundleData.packageHash != remoteBundleData.packageHash) {
+        remotePackage = await downloadAndInstallTheRemoteBundle(
+          remoteBundleData,
+        );
       }
-    }
-
-    return null;
-  } else {
-    const remotePackage = {
-      ...update,
-      ...PackageMixins.remote(sdk.reportStatusDownload),
-    };
-    remotePackage.failedInstall = await NativeCodePush.isFailedUpdate(
-      remotePackage.packageHash,
-    );
-    remotePackage.deploymentKey = deploymentKey || nativeConfig.deploymentKey;
-    return remotePackage;
-  }
-}
-
-const getConfiguration = (() => {
-  let config;
-  return async function getConfiguration() {
-    if (config) {
-      return config;
     } else {
-      config = await NativeCodePush.getConfiguration();
-      return config;
+      //download the latest bundle
+      remotePackage = await downloadAndInstallTheRemoteBundle(remoteBundleData);
     }
-  };
-})();
+  }
 
-async function getCurrentPackage() {
-  return await getUpdateMetadata();
+  console.log('remote package');
+  console.log(remotePackage);
+  return remotePackage;
 }
 
-async function getUpdateMetadata() {
-  let updateMetadata = await NativeCodePush.getUpdateMetadata(
-    updateState || CodePush.UpdateState.RUNNING,
+async function downloadAndInstallTheRemoteBundle(remoteBundleData) {
+  console.log('in downloadAndInstallTheRemoteBundle' + remoteBundleData);
+  //download the latest bundle
+  let downloadedBundleData = await NativeCodePush.downloadUpdate(
+    remoteBundleData,
   );
-  if (updateMetadata) {
-    updateMetadata = {...PackageMixins.local, ...updateMetadata};
-    updateMetadata.failedInstall = await NativeCodePush.isFailedUpdate(
-      updateMetadata.packageHash,
-    );
-    updateMetadata.isFirstRun = await NativeCodePush.isFirstRun(
-      updateMetadata.packageHash,
-    );
-  }
+  console.log('in downloaded bundle data' + downloadedBundleData);
+  //install it
+  await NativeCodePush.installUpdate(
+    downloadedBundleData,
+    minimumBackgroundDuration,
+  );
+
+  return downloadedBundleData;
+}
+
+async function getConfiguration() {
+  //     return await NativeCodePush.getConfiguration();
+  return {
+    appVersion: '4.34',
+    clientUniqueId: '87ec101c23c4e956',
+    deploymentKey: 'izyOaXcmgfBJBhog0nncDYAyFjpgp-1q5UlAg',
+    serverUrl: 'https://codepush.appcenter.ms/',
+  };
+}
+
+//call native function to get the local package data if available
+async function getUpdateMetadata() {
+  let updateMetadata = await NativeCodePush.getUpdateMetadata();
+  updateMetadata = {
+    appVersion: '4.34',
+    deploymentKey: 'izyOaXcmgfBJBhog0nncDYAyFjpgp-1q5UlAg',
+    label: 'v4',
+    packageHash:
+      '9b454d631e728fe6a63e326cf383a8dc8727e93dec6f4639751af06980a92fde',
+    packageSize: 490782,
+  };
   return updateMetadata;
 }
 
-//need to write this
-function getPromisifiedSdk(requestFetchAdapter, config) {
-  return {name: 'Ganesh'};
+//need to write this, make a network call here to check if we have a new bundle on server
+async function getRemoteBundleData(nativeConfig) {
+  return {
+    downloadUrl:
+      'https://codepushupdates.azureedge.net/storagev2/R8IL6ZJRtTDmbpk6niw-m9_xAW9V8280fa3d-d7c9-453c-a2a8-08f96a8cbd32',
+    description: 'description',
+    isAvailable: true,
+    appVersion: '4.34',
+    packageHash:
+      'ecf56049102a36ae8a0d9ca3e948a711fed10f65bcf4e4fb066d810e09505a1c',
+    label: 'v5',
+    packageSize: 488754,
+  };
 }
 
 let CodePush;
@@ -253,7 +209,6 @@ if (NativeCodePush) {
   Object.assign(CodePush, {
     checkForUpdate,
     getConfiguration,
-    getCurrentPackage,
     getUpdateMetadata,
     sync,
     log,
