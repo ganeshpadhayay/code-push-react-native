@@ -58,11 +58,7 @@ async function downloadAndInstallTheRemoteBundle(remoteBundleData) {
   console.log('downloadedBundleData');
   console.log(downloadedBundleData);
   //install it
-  await NativeCodePush.installUpdate(
-    downloadedBundleData,
-    (minimumBackgroundDuration = 0),
-  );
-
+  await NativeCodePush.installUpdate(downloadedBundleData);
   return downloadedBundleData;
 }
 

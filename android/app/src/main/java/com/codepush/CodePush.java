@@ -199,6 +199,10 @@ public class CodePush implements ReactPackage {
         mUpdateManager.clearUpdates();
     }
 
+    public static void setReactInstanceHolder(ReactInstanceHolder reactInstanceHolder) {
+        mReactInstanceHolder = reactInstanceHolder;
+    }
+
     static ReactInstanceManager getReactInstanceManager() {
         if (mReactInstanceHolder == null) {
             return null;

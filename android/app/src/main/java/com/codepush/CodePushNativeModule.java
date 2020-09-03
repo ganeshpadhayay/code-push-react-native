@@ -25,7 +25,6 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.Date;
 
 public class CodePushNativeModule extends ReactContextBaseJavaModule {
     private String mBinaryContentsHash = null;
@@ -186,72 +185,17 @@ public class CodePushNativeModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void installUpdate(final ReadableMap updatePackage, final int minimumBackgroundDuration, final Promise promise) {
+    public void installUpdate(final ReadableMap updatePackage, final Promise promise) {
         AsyncTask<Void, Void, Void> asyncTask = new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
                 try {
                     mUpdateManager.installPackage(CodePushUtils.convertReadableToJsonObject(updatePackage));
-                    String pendingHash = CodePushUtils.tryGetString(updatePackage, CodePushConstants.PACKAGE_HASH_KEY);
-                    if (pendingHash == null) {
-                        throw new CodePushUnknownException("Update package to be installed has no hash.");
-                    }
-
-                    // Store the minimum duration on the native module as an instance
-                    // variable instead of relying on a closure below, so that any
-                    // subsequent resume-based installs could override it.
-                    CodePushNativeModule.this.mMinimumBackgroundDuration = minimumBackgroundDuration;
-
-                    if (mLifecycleEventListener == null) {
-                        // Ensure we do not add the listener twice.
-                        mLifecycleEventListener = new LifecycleEventListener() {
-                            private Date lastPausedDate = null;
-                            private Handler appSuspendHandler = new Handler(Looper.getMainLooper());
-                            private Runnable loadBundleRunnable = new Runnable() {
-                                @Override
-                                public void run() {
-                                    CodePushUtils.log("Loading bundle on suspend");
-                                    restartAppInternal();
-                                }
-                            };
-
-                            @Override
-                            public void onHostResume() {
-                                appSuspendHandler.removeCallbacks(loadBundleRunnable);
-                                // As of RN 36, the resume handler fires immediately if the app is in
-                                // the foreground, so explicitly wait for it to be backgrounded first
-                                if (lastPausedDate != null) {
-                                    long durationInBackground = (new Date().getTime() - lastPausedDate.getTime()) / 1000;
-                                    if (durationInBackground >= CodePushNativeModule.this.mMinimumBackgroundDuration) {
-                                        CodePushUtils.log("Loading bundle on resume");
-                                        restartAppInternal();
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void onHostPause() {
-                                // Save the current time so that when the app is later
-                                // resumed, we can detect how long it was in the background.
-                                lastPausedDate = new Date();
-                                appSuspendHandler.postDelayed(loadBundleRunnable, minimumBackgroundDuration * 1000);
-                            }
-
-                            @Override
-                            public void onHostDestroy() {
-                            }
-                        };
-
-                        getReactApplicationContext().addLifecycleEventListener(mLifecycleEventListener);
-                    }
-
-
                     promise.resolve("");
                 } catch (CodePushUnknownException e) {
                     CodePushUtils.log(e);
                     promise.reject(e);
                 }
-
                 return null;
             }
         };
