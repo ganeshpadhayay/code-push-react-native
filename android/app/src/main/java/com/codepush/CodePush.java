@@ -13,8 +13,6 @@ import com.facebook.react.devsupport.DevInternalSettings;
 import com.facebook.react.devsupport.interfaces.DevSupportManager;
 import com.facebook.react.uimanager.ViewManager;
 
-import org.json.JSONObject;
-
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -22,10 +20,7 @@ import java.util.List;
 
 public class CodePush implements ReactPackage {
 
-    private static boolean sIsRunningBinaryVersion = false;
     private static String sAppVersion = null;
-
-    private boolean mDidUpdate = false;
 
     private String mAssetsBundleFileName;
 
@@ -126,37 +121,12 @@ public class CodePush implements ReactPackage {
         }
     }
 
-    public boolean didUpdate() {
-        return mDidUpdate;
-    }
-
     public String getAppVersion() {
         return sAppVersion;
     }
 
     public String getAssetsBundleFileName() {
         return mAssetsBundleFileName;
-    }
-
-    long getBinaryResourcesModifiedTime() {
-        try {
-            String packageName = this.mContext.getPackageName();
-            int codePushApkBuildTimeId = this.mContext.getResources().getIdentifier(CodePushConstants.CODE_PUSH_APK_BUILD_TIME_KEY, "string", packageName);
-            // replace double quotes needed for correct restoration of long value from strings.xml
-            // https://github.com/microsoft/cordova-plugin-code-push/issues/264
-            String codePushApkBuildTime = this.mContext.getResources().getString(codePushApkBuildTimeId).replaceAll("\"", "");
-            return Long.parseLong(codePushApkBuildTime);
-        } catch (Exception e) {
-            throw new CodePushUnknownException("Error in getting binary resources modified time", e);
-        }
-    }
-
-    public String getPackageFolder() {
-        JSONObject codePushLocalPackage = mUpdateManager.getCurrentPackage();
-        if (codePushLocalPackage == null) {
-            return null;
-        }
-        return mUpdateManager.getPackageFolderPath(codePushLocalPackage.optString("packageHash"));
     }
 
     @Deprecated
@@ -167,10 +137,6 @@ public class CodePush implements ReactPackage {
     @Deprecated
     public static String getBundleUrl(String assetsBundleFileName) {
         return getJSBundleFile(assetsBundleFileName);
-    }
-
-    public Context getContext() {
-        return mContext;
     }
 
     public String getDeploymentKey() {
@@ -206,26 +172,11 @@ public class CodePush implements ReactPackage {
             if (packageFilePath == null) {
                 // There has not been any downloaded updates.
                 CodePushUtils.logBundleUrl(binaryJsBundleUrl);
-                sIsRunningBinaryVersion = true;
                 return binaryJsBundleUrl;
             }
 
-            JSONObject packageMetadata = this.mUpdateManager.getCurrentPackage();
-            if (isPackageBundleLatest(packageMetadata)) {
-                CodePushUtils.logBundleUrl(packageFilePath);
-                sIsRunningBinaryVersion = false;
-                return packageFilePath;
-            } else {
-                // The binary version is newer.
-                this.mDidUpdate = false;
-                if (!this.mIsDebugMode || hasBinaryVersionChanged(packageMetadata)) {
-                    this.clearUpdates();
-                }
-
-                CodePushUtils.logBundleUrl(binaryJsBundleUrl);
-                sIsRunningBinaryVersion = true;
-                return binaryJsBundleUrl;
-            }
+            //todo check here if it will send the old app version bundle for new versions also
+            return packageFilePath;
         } catch (Exception e) {
             //do nothing for now
         }
@@ -244,43 +195,8 @@ public class CodePush implements ReactPackage {
         return mIsDebugMode;
     }
 
-    boolean isRunningBinaryVersion() {
-        return sIsRunningBinaryVersion;
-    }
-
-    private boolean isPackageBundleLatest(JSONObject packageMetadata) {
-        try {
-            Long binaryModifiedDateDuringPackageInstall = null;
-            String binaryModifiedDateDuringPackageInstallString = packageMetadata.optString(CodePushConstants.BINARY_MODIFIED_TIME_KEY, null);
-            if (binaryModifiedDateDuringPackageInstallString != null) {
-                binaryModifiedDateDuringPackageInstall = Long.parseLong(binaryModifiedDateDuringPackageInstallString);
-            }
-            String packageAppVersion = packageMetadata.optString("appVersion", null);
-            long binaryResourcesModifiedTime = this.getBinaryResourcesModifiedTime();
-            return binaryModifiedDateDuringPackageInstall != null &&
-                    binaryModifiedDateDuringPackageInstall == binaryResourcesModifiedTime &&
-                    (sAppVersion.equals(packageAppVersion));
-        } catch (NumberFormatException e) {
-            throw new CodePushUnknownException("Error in reading binary modified date from package metadata", e);
-        }
-    }
-
-    private boolean hasBinaryVersionChanged(JSONObject packageMetadata) {
-        String packageAppVersion = packageMetadata.optString("appVersion", null);
-        return !sAppVersion.equals(packageAppVersion);
-    }
-
-
-    public static void overrideAppVersion(String appVersionOverride) {
-        sAppVersion = appVersionOverride;
-    }
-
     public void clearUpdates() {
         mUpdateManager.clearUpdates();
-    }
-
-    public static void setReactInstanceHolder(ReactInstanceHolder reactInstanceHolder) {
-        mReactInstanceHolder = reactInstanceHolder;
     }
 
     static ReactInstanceManager getReactInstanceManager() {

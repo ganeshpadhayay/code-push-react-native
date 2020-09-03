@@ -126,7 +126,6 @@ public class CodePushNativeModule extends ReactContextBaseJavaModule {
             protected Void doInBackground(Void... params) {
                 try {
                     JSONObject mutableUpdatePackage = CodePushUtils.convertReadableToJsonObject(updatePackage);
-//                    CodePushUtils.setJSONValueForKey(mutableUpdatePackage, CodePushConstants.BINARY_MODIFIED_TIME_KEY, "" + mCodePush.getBinaryResourcesModifiedTime());
                     mUpdateManager.downloadPackage(mutableUpdatePackage, mCodePush.getAssetsBundleFileName(), new DownloadProgressCallback() {
                         private boolean hasScheduledNextFrame = false;
                         private DownloadProgress latestDownloadProgress = null;
@@ -193,7 +192,6 @@ public class CodePushNativeModule extends ReactContextBaseJavaModule {
             protected Void doInBackground(Void... params) {
                 try {
                     mUpdateManager.installPackage(CodePushUtils.convertReadableToJsonObject(updatePackage));
-
                     String pendingHash = CodePushUtils.tryGetString(updatePackage, CodePushConstants.PACKAGE_HASH_KEY);
                     if (pendingHash == null) {
                         throw new CodePushUnknownException("Update package to be installed has no hash.");

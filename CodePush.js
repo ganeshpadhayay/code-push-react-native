@@ -39,7 +39,7 @@ async function checkForUpdate() {
       }
     } else {
       //download the latest bundle
-      console.log('not local bundle present');
+      console.log('no local bundle present');
       remotePackage = await downloadAndInstallTheRemoteBundle(remoteBundleData);
     }
   }

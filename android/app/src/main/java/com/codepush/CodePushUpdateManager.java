@@ -20,10 +20,6 @@ public class CodePushUpdateManager {
         mDocumentsDirectory = documentsDirectory;
     }
 
-    private String getDownloadFilePath() {
-        return CodePushUtils.appendPathComponent(getCodePushPath(), CodePushConstants.DOWNLOAD_FILE_NAME);
-    }
-
     private String getUnzippedFolderPath() {
         return CodePushUtils.appendPathComponent(getCodePushPath(), CodePushConstants.UNZIPPED_FOLDER_NAME);
     }
@@ -112,15 +108,6 @@ public class CodePushUpdateManager {
         if (packageHash == null) {
             return null;
         }
-        return getPackage(packageHash);
-    }
-
-    public JSONObject getPreviousPackage() {
-        String packageHash = getPreviousPackageHash();
-        if (packageHash == null) {
-            return null;
-        }
-
         return getPackage(packageHash);
     }
 
@@ -270,43 +257,8 @@ public class CodePushUpdateManager {
         }
 
         CodePushUtils.setJSONValueForKey(info, CodePushConstants.PREVIOUS_PACKAGE_KEY, info.optString(CodePushConstants.CURRENT_PACKAGE_KEY, null));
-
-
         CodePushUtils.setJSONValueForKey(info, CodePushConstants.CURRENT_PACKAGE_KEY, packageHash);
         updateCurrentPackageInfo(info);
-    }
-
-    public void downloadAndReplaceCurrentBundle(String remoteBundleUrl, String bundleFileName) throws IOException {
-        URL downloadUrl;
-        HttpURLConnection connection = null;
-        BufferedInputStream bin = null;
-        FileOutputStream fos = null;
-        BufferedOutputStream bout = null;
-        try {
-            downloadUrl = new URL(remoteBundleUrl);
-            connection = (HttpURLConnection) (downloadUrl.openConnection());
-            bin = new BufferedInputStream(connection.getInputStream());
-            File downloadFile = new File(getCurrentPackageBundlePath(bundleFileName));
-            downloadFile.delete();
-            fos = new FileOutputStream(downloadFile);
-            bout = new BufferedOutputStream(fos, CodePushConstants.DOWNLOAD_BUFFER_SIZE);
-            byte[] data = new byte[CodePushConstants.DOWNLOAD_BUFFER_SIZE];
-            int numBytesRead = 0;
-            while ((numBytesRead = bin.read(data, 0, CodePushConstants.DOWNLOAD_BUFFER_SIZE)) >= 0) {
-                bout.write(data, 0, numBytesRead);
-            }
-        } catch (MalformedURLException e) {
-            throw new CodePushMalformedDataException(remoteBundleUrl, e);
-        } finally {
-            try {
-                if (bout != null) bout.close();
-                if (fos != null) fos.close();
-                if (bin != null) bin.close();
-                if (connection != null) connection.disconnect();
-            } catch (IOException e) {
-                throw new CodePushUnknownException("Error closing IO resources.", e);
-            }
-        }
     }
 
     public void clearUpdates() {
