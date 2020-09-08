@@ -33,24 +33,6 @@ public class CodePushUpdateManager {
         return codePushPath;
     }
 
-    private String getStatusFilePath() {
-        return CodePushUtils.appendPathComponent(getCodePushPath(), CodePushConstants.STATUS_FILE);
-    }
-
-    public JSONObject getCurrentPackageInfo() {
-        String statusFilePath = getStatusFilePath();
-        if (!FileUtils.fileAtPathExists(statusFilePath)) {
-            return new JSONObject();
-        }
-
-        try {
-            return CodePushUtils.getJsonObjectFromFile(statusFilePath);
-        } catch (IOException e) {
-            // Should not happen.
-            throw new CodePushUnknownException("Error getting current package info", e);
-        }
-    }
-
     public void updateCurrentPackageInfo(JSONObject packageInfo) {
         try {
             CodePushUtils.writeJsonToFile(packageInfo, getStatusFilePath());
@@ -62,7 +44,7 @@ public class CodePushUpdateManager {
 
     public String getCurrentPackageFolderPath() {
         JSONObject info = getCurrentPackageInfo();
-        String packageHash = info.optString(CodePushConstants.CURRENT_PACKAGE_KEY, null);
+        String packageHash = info.optString(CodePushConstants.CURRENT_LABEL_KEY, null);
         if (packageHash == null) {
             return null;
         }
@@ -93,11 +75,6 @@ public class CodePushUpdateManager {
         return CodePushUtils.appendPathComponent(getCodePushPath(), packageHash);
     }
 
-    public String getCurrentPackageHash() {
-        JSONObject info = getCurrentPackageInfo();
-        return info.optString(CodePushConstants.CURRENT_PACKAGE_KEY, null);
-    }
-
     public String getPreviousPackageHash() {
         JSONObject info = getCurrentPackageInfo();
         return info.optString(CodePushConstants.PREVIOUS_PACKAGE_KEY, null);
@@ -111,6 +88,29 @@ public class CodePushUpdateManager {
         return getPackage(packageHash);
     }
 
+    public String getCurrentPackageHash() {
+        JSONObject info = getCurrentPackageInfo();
+        return info.optString(CodePushConstants.CURRENT_LABEL_KEY, null);
+    }
+
+    public JSONObject getCurrentPackageInfo() {
+        String statusFilePath = getStatusFilePath();
+        if (!FileUtils.fileAtPathExists(statusFilePath)) {
+            return new JSONObject();
+        }
+
+        try {
+            return CodePushUtils.getJsonObjectFromFile(statusFilePath);
+        } catch (IOException e) {
+            // Should not happen.
+            throw new CodePushUnknownException("Error getting current package info", e);
+        }
+    }
+
+    private String getStatusFilePath() {
+        return CodePushUtils.appendPathComponent(getCodePushPath(), CodePushConstants.STATUS_FILE);
+    }
+
     public JSONObject getPackage(String packageHash) {
         String folderPath = getPackageFolderPath(packageHash);
         String packageFilePath = CodePushUtils.appendPathComponent(folderPath, CodePushConstants.PACKAGE_FILE_NAME);
@@ -122,7 +122,7 @@ public class CodePushUpdateManager {
     }
 
     public void downloadPackage(JSONObject updatePackage, String expectedBundleFileName, DownloadProgressCallback progressCallback) throws IOException {
-        String newUpdateHash = updatePackage.optString(CodePushConstants.PACKAGE_HASH_KEY, null);
+        String newUpdateHash = updatePackage.optString(CodePushConstants.PACKAGE_LABEL_KEY, null);
         String newUpdateFolderPath = getPackageFolderPath(newUpdateHash);
         String newUpdateMetadataPath = CodePushUtils.appendPathComponent(newUpdateFolderPath, CodePushConstants.PACKAGE_FILE_NAME);
         if (FileUtils.fileAtPathExists(newUpdateFolderPath)) {
@@ -242,10 +242,10 @@ public class CodePushUpdateManager {
     }
 
     public void installPackage(JSONObject updatePackage) {
-        String packageHash = updatePackage.optString(CodePushConstants.PACKAGE_HASH_KEY, null);
+        String packageHash = updatePackage.optString(CodePushConstants.PACKAGE_LABEL_KEY, null);
         JSONObject info = getCurrentPackageInfo();
 
-        String currentPackageHash = info.optString(CodePushConstants.CURRENT_PACKAGE_KEY, null);
+        String currentPackageHash = info.optString(CodePushConstants.CURRENT_LABEL_KEY, null);
         if (packageHash != null && packageHash.equals(currentPackageHash)) {
             // The current package is already the one being installed, so we should no-op.
             return;
@@ -256,8 +256,8 @@ public class CodePushUpdateManager {
             FileUtils.deleteDirectoryAtPath(getPackageFolderPath(previousPackageHash));
         }
 
-        CodePushUtils.setJSONValueForKey(info, CodePushConstants.PREVIOUS_PACKAGE_KEY, info.optString(CodePushConstants.CURRENT_PACKAGE_KEY, null));
-        CodePushUtils.setJSONValueForKey(info, CodePushConstants.CURRENT_PACKAGE_KEY, packageHash);
+        CodePushUtils.setJSONValueForKey(info, CodePushConstants.PREVIOUS_PACKAGE_KEY, info.optString(CodePushConstants.CURRENT_LABEL_KEY, null));
+        CodePushUtils.setJSONValueForKey(info, CodePushConstants.CURRENT_LABEL_KEY, packageHash);
         updateCurrentPackageInfo(info);
     }
 

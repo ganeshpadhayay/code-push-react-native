@@ -29,11 +29,6 @@ export interface Package {
    */
   description: string;
   /**
-   * The SHA hash value of the update.
-   */
-  packageHash: string;
-
-  /**
    * The size of the code contained within the update, in bytes.
    */
   packageSize: number;

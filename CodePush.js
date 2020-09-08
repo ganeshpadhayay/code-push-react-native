@@ -17,7 +17,6 @@ async function checkForUpdate() {
   //make the network call to check if we have new updates
   if (localBundleData) {
     nativeConfig.label = localBundleData.label;
-    nativeConfig.packageHash = localBundleData.packageHash;
   }
 
   let remoteBundleData = await getRemoteBundleData(nativeConfig);
@@ -28,14 +27,14 @@ async function checkForUpdate() {
 
   if (remoteBundleData && remoteBundleData.isAvailable) {
     if (localBundleData) {
-      if (localBundleData.packageHash != remoteBundleData.packageHash) {
-        console.log('hash mismatch');
+      if (localBundleData.label != remoteBundleData.label) {
+        console.log('label mismatch');
         remotePackage = await downloadAndInstallTheRemoteBundle(
           remoteBundleData,
         );
       } else {
         //do nothing
-        console.log('hash match');
+        console.log('label match');
       }
     } else {
       //download the latest bundle
@@ -79,8 +78,6 @@ async function getUpdateMetadata() {
   //   appVersion: '4.34',
   //   deploymentKey: 'izyOaXcmgfBJBhog0nncDYAyFjpgp-1q5UlAg',
   //   label: 'v4',
-  //   packageHash:
-  //     '9b454d631e728fe6a63e326cf383a8dc8727e93dec6f4639751af06980a92fde',
   //   packageSize: 490782,
   // };
   return updateMetadata;
@@ -94,8 +91,6 @@ async function getRemoteBundleData(nativeConfig) {
     description: 'description',
     isAvailable: true,
     appVersion: '4.34',
-    packageHash:
-      'ecf56049102a36ae8a0d9ca3e948a711fed10f65bcf4e4fb066d810e09505a1c',
     label: 'v5',
     packageSize: 488754,
   };

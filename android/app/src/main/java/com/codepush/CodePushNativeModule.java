@@ -1,16 +1,13 @@
 package com.codepush;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.AsyncTask;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 
 import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.JSBundleLoader;
-import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -24,31 +21,21 @@ import com.facebook.react.modules.core.ReactChoreographer;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 
 public class CodePushNativeModule extends ReactContextBaseJavaModule {
     private String mBinaryContentsHash = null;
     private String mClientUniqueId = null;
-    private LifecycleEventListener mLifecycleEventListener = null;
-    private int mMinimumBackgroundDuration = 0;
-
     private CodePush mCodePush;
     private CodePushUpdateManager mUpdateManager;
 
+    @SuppressLint("HardwareIds")
     public CodePushNativeModule(ReactApplicationContext reactContext, CodePush codePush, CodePushUpdateManager codePushUpdateManager) {
         super(reactContext);
 
         mCodePush = codePush;
         mUpdateManager = codePushUpdateManager;
 
-        // Initialize module state while we have a reference to the current context.
-        mBinaryContentsHash = CodePushUpdateUtils.getHashForBinaryContents(reactContext, mCodePush.isDebugMode());
         mClientUniqueId = Settings.Secure.getString(reactContext.getContentResolver(), Settings.Secure.ANDROID_ID);
-    }
-
-    @Override
-    public String getName() {
-        return "CodePush";
     }
 
     // Use reflection to find the ReactInstanceManager. See #556 for a proposal for a less brittle way to approach this.
@@ -77,11 +64,6 @@ public class CodePushNativeModule extends ReactContextBaseJavaModule {
             configMap.putString("clientUniqueId", mClientUniqueId);
             configMap.putString("deploymentKey", mCodePush.getDeploymentKey());
             configMap.putString("serverUrl", mCodePush.getServerUrl());
-
-            // The binary hash may be null in debug builds
-            if (mBinaryContentsHash != null) {
-                configMap.putString(CodePushConstants.PACKAGE_HASH_KEY, mBinaryContentsHash);
-            }
 
             promise.resolve(configMap);
         } catch (CodePushUnknownException e) {
@@ -167,7 +149,7 @@ public class CodePushNativeModule extends ReactContextBaseJavaModule {
                         }
                     });
 
-                    JSONObject newPackage = mUpdateManager.getPackage(CodePushUtils.tryGetString(updatePackage, CodePushConstants.PACKAGE_HASH_KEY));
+                    JSONObject newPackage = mUpdateManager.getPackage(CodePushUtils.tryGetString(updatePackage, CodePushConstants.PACKAGE_LABEL_KEY));
                     promise.resolve(CodePushUtils.convertJsonObjectToWritable(newPackage));
                 } catch (CodePushInvalidUpdateException e) {
                     CodePushUtils.log(e);
@@ -203,112 +185,11 @@ public class CodePushNativeModule extends ReactContextBaseJavaModule {
         asyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    private void restartAppInternal() {
-        CodePushUtils.log("Restarting app");
-        loadBundle();
+    @Override
+    public String getName() {
+        return "CodePush";
     }
 
-    private void loadBundle() {
-        clearLifecycleEventListener();
-        try {
-            mCodePush.clearDebugCacheIfNeeded(resolveInstanceManager());
-        } catch (Exception e) {
-            // If we got error in out reflection we should clear debug cache anyway.
-            mCodePush.clearDebugCacheIfNeeded(null);
-        }
-
-        try {
-            // #1) Get the ReactInstanceManager instance, which is what includes the
-            //     logic to reload the current React context.
-            final ReactInstanceManager instanceManager = resolveInstanceManager();
-            if (instanceManager == null) {
-                return;
-            }
-
-            String latestJSBundleFile = mCodePush.getJSBundleFileInternal(mCodePush.getAssetsBundleFileName());
-
-            // #2) Update the locally stored JS bundle file path
-            setJSBundle(instanceManager, latestJSBundleFile);
-
-            // #3) Get the context creation method and fire it on the UI thread (which RN enforces)
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        // We don't need to resetReactRootViews anymore
-                        // due the issue https://github.com/facebook/react-native/issues/14533
-                        // has been fixed in RN 0.46.0
-                        //resetReactRootViews(instanceManager);
-
-                        instanceManager.recreateReactContextInBackground();
-                    } catch (Exception e) {
-                        // The recreation method threw an unknown exception
-                        // so just simply fallback to restarting the Activity (if it exists)
-                        loadBundleLegacy();
-                    }
-                }
-            });
-
-        } catch (Exception e) {
-            // Our reflection logic failed somewhere
-            // so fall back to restarting the Activity (if it exists)
-            CodePushUtils.log("Failed to load the bundle, falling back to restarting the Activity (if it exists). " + e.getMessage());
-            loadBundleLegacy();
-        }
-    }
-
-    private void loadBundleLegacy() {
-        final Activity currentActivity = getCurrentActivity();
-        if (currentActivity == null) {
-            // The currentActivity can be null if it is backgrounded / destroyed, so we simply
-            // no-op to prevent any null pointer exceptions.
-            return;
-        }
-        mCodePush.invalidateCurrentInstance();
-
-        currentActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                currentActivity.recreate();
-            }
-        });
-    }
-
-    // Use reflection to find and set the appropriate fields on ReactInstanceManager. See #556 for a proposal for a less brittle way
-    // to approach this.
-    private void setJSBundle(ReactInstanceManager instanceManager, String latestJSBundleFile) throws IllegalAccessException {
-        try {
-            JSBundleLoader latestJSBundleLoader;
-            if (latestJSBundleFile.toLowerCase().startsWith("assets://")) {
-                latestJSBundleLoader = JSBundleLoader.createAssetLoader(getReactApplicationContext(), latestJSBundleFile, false);
-            } else {
-                latestJSBundleLoader = JSBundleLoader.createFileLoader(latestJSBundleFile);
-            }
-
-            Field bundleLoaderField = instanceManager.getClass().getDeclaredField("mBundleLoader");
-            bundleLoaderField.setAccessible(true);
-            bundleLoaderField.set(instanceManager, latestJSBundleLoader);
-        } catch (Exception e) {
-            CodePushUtils.log("Unable to set JSBundle - CodePush may not support this version of React Native");
-            throw new IllegalAccessException("Could not setJSBundle");
-        }
-    }
-
-    private void clearLifecycleEventListener() {
-        // Remove LifecycleEventListener to prevent infinite restart loop
-        if (mLifecycleEventListener != null) {
-            getReactApplicationContext().removeLifecycleEventListener(mLifecycleEventListener);
-            mLifecycleEventListener = null;
-        }
-    }
-
-    /**
-     * This method clears CodePush's downloaded updates.
-     * It is needed to switch to a different deployment if the current deployment is more recent.
-     * Note: we don’t recommend to use this method in scenarios other than that (CodePush will call
-     * this method automatically when needed in other cases) as it could lead to unpredictable
-     * behavior.
-     */
     @ReactMethod
     public void clearUpdates() {
         CodePushUtils.log("Clearing updates.");
