@@ -76,16 +76,31 @@ async function getUpdateMetadata() {
 //need to write this, make a network call here to check if we have a new bundle on server
 async function getRemoteBundleData(nativeConfig) {
   console.log(nativeConfig);
-  return {
-    updateDownloadUrl:
-      'https://codepushupdates.azureedge.net/storagev2/R8IL6ZJRtTDmbpk6niw-m9_xAW9V8280fa3d-d7c9-453c-a2a8-08f96a8cbd32',
-    message: 'message',
-    success: true,
-    appVersion: '4.34',
-    bundleVersion: 'v5',
-    forceUpdate: 1,
-    packageSize: 488754,
-  };
+  try {
+    let response = await fetch('https://jsonplaceholder.typicode.com/todos/1', {
+      method: 'GET',
+      headers: {
+        appVersion: nativeConfig.appVersion,
+        platformType: nativeConfig.platformType,
+        bundleVersion: nativeConfig.bundleVersion,
+      },
+    });
+    let responseJson = await response.json();
+    console.log(responseJson);
+    return responseJson;
+  } catch (error) {
+    console.error(error);
+  }
+  // return {
+  //   updateDownloadUrl:
+  //     'https://codepushupdates.azureedge.net/storagev2/R8IL6ZJRtTDmbpk6niw-m9_xAW9V8280fa3d-d7c9-453c-a2a8-08f96a8cbd32',
+  //   message: 'message',
+  //   success: true,
+  //   appVersion: '4.34',
+  //   bundleVersion: 'v5',
+  //   forceUpdate: 1,
+  //   packageSize: 488754,
+  // };
 }
 
 let CodePush;
