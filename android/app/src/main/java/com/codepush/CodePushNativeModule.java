@@ -3,7 +3,6 @@ package com.codepush;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.AsyncTask;
-import android.provider.Settings;
 
 import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactInstanceManager;
@@ -23,19 +22,15 @@ import org.json.JSONObject;
 import java.io.IOException;
 
 public class CodePushNativeModule extends ReactContextBaseJavaModule {
-    private String mBinaryContentsHash = null;
-    private String mClientUniqueId = null;
+
     private CodePush mCodePush;
     private CodePushUpdateManager mUpdateManager;
 
     @SuppressLint("HardwareIds")
     public CodePushNativeModule(ReactApplicationContext reactContext, CodePush codePush, CodePushUpdateManager codePushUpdateManager) {
         super(reactContext);
-
         mCodePush = codePush;
         mUpdateManager = codePushUpdateManager;
-
-        mClientUniqueId = Settings.Secure.getString(reactContext.getContentResolver(), Settings.Secure.ANDROID_ID);
     }
 
     // Use reflection to find the ReactInstanceManager. See #556 for a proposal for a less brittle way to approach this.
@@ -61,10 +56,7 @@ public class CodePushNativeModule extends ReactContextBaseJavaModule {
         try {
             WritableMap configMap = Arguments.createMap();
             configMap.putString("appVersion", mCodePush.getAppVersion());
-            configMap.putString("clientUniqueId", mClientUniqueId);
-            configMap.putString("deploymentKey", mCodePush.getDeploymentKey());
-            configMap.putString("serverUrl", mCodePush.getServerUrl());
-
+            configMap.putString("platformType", "android");
             promise.resolve(configMap);
         } catch (CodePushUnknownException e) {
             CodePushUtils.log(e);

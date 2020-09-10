@@ -98,7 +98,6 @@ public class CodePushUpdateManager {
         if (!FileUtils.fileAtPathExists(statusFilePath)) {
             return new JSONObject();
         }
-
         try {
             return CodePushUtils.getJsonObjectFromFile(statusFilePath);
         } catch (IOException e) {

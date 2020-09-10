@@ -15,11 +15,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.Iterator;
 
 public class CodePushUtils {
@@ -30,7 +27,7 @@ public class CodePushUtils {
 
     public static WritableArray convertJsonArrayToWritable(JSONArray jsonArr) {
         WritableArray arr = Arguments.createArray();
-        for (int i=0; i<jsonArr.length(); i++) {
+        for (int i = 0; i < jsonArr.length(); i++) {
             Object obj = null;
             try {
                 obj = jsonArr.get(i);
@@ -63,7 +60,7 @@ public class CodePushUtils {
     public static WritableMap convertJsonObjectToWritable(JSONObject jsonObj) {
         WritableMap map = Arguments.createMap();
         Iterator<String> it = jsonObj.keys();
-        while(it.hasNext()){
+        while (it.hasNext()) {
             String key = it.next();
             Object obj = null;
             try {
@@ -98,7 +95,7 @@ public class CodePushUtils {
 
     public static JSONArray convertReadableToJsonArray(ReadableArray arr) {
         JSONArray jsonArr = new JSONArray();
-        for (int i=0; i<arr.size(); i++) {
+        for (int i = 0; i < arr.size(); i++) {
             ReadableType type = arr.getType(i);
             switch (type) {
                 case Map:
@@ -170,25 +167,6 @@ public class CodePushUtils {
         }
 
         return jsonObj;
-    }
-
-    public static String getStringFromInputStream(InputStream inputStream) throws IOException {
-        BufferedReader bufferedReader = null;
-        try {
-            StringBuilder buffer = new StringBuilder();
-            bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                buffer.append(line);
-                buffer.append("\n");
-            }
-
-            return buffer.toString().trim();
-        } finally {
-            if (bufferedReader != null) bufferedReader.close();
-            if (inputStream != null) inputStream.close();
-        }
     }
 
     public static JSONObject getJsonObjectFromFile(String filePath) throws IOException {

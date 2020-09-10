@@ -13,6 +13,8 @@ import com.facebook.react.devsupport.DevInternalSettings;
 import com.facebook.react.devsupport.interfaces.DevSupportManager;
 import com.facebook.react.uimanager.ViewManager;
 
+import org.json.JSONObject;
+
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -27,25 +29,16 @@ public class CodePush implements ReactPackage {
     // Helper classes.
     private CodePushUpdateManager mUpdateManager;
 
-    // Config properties.
-    private String mDeploymentKey;
-    private static String mServerUrl = "https://airtel.com/";
-
     private Context mContext;
     private final boolean mIsDebugMode;
 
     private static ReactInstanceHolder mReactInstanceHolder;
     private static CodePush mCurrentInstance;
 
-    public CodePush(String deploymentKey, Context context) {
-        this(deploymentKey, context, false);
-    }
-
-    public CodePush(String deploymentKey, Context context, boolean isDebugMode) {
+    public CodePush(Context context, boolean isDebugMode) {
         mContext = context.getApplicationContext();
 
         mUpdateManager = new CodePushUpdateManager(context.getFilesDir().getAbsolutePath());
-        mDeploymentKey = deploymentKey;
         mIsDebugMode = isDebugMode;
 
         if (sAppVersion == null) {
@@ -59,33 +52,7 @@ public class CodePush implements ReactPackage {
 
         mCurrentInstance = this;
 
-        String serverUrlFromStrings = getCustomPropertyFromStringsIfExist("ServerUrl");
-        if (serverUrlFromStrings != null) mServerUrl = serverUrlFromStrings;
-
         clearDebugCacheIfNeeded(null);
-    }
-
-    public static String getServiceUrl() {
-        return mServerUrl;
-    }
-
-    private String getCustomPropertyFromStringsIfExist(String propertyName) {
-        String property;
-
-        String packageName = mContext.getPackageName();
-        int resId = mContext.getResources().getIdentifier("CodePush" + propertyName, "string", packageName);
-
-        if (resId != 0) {
-            property = mContext.getString(resId);
-
-            if (!property.isEmpty()) {
-                return property;
-            } else {
-                CodePushUtils.log("Specified " + propertyName + " is empty");
-            }
-        }
-
-        return null;
     }
 
     private boolean isLiveReloadEnabled(ReactInstanceManager instanceManager) {
@@ -107,7 +74,6 @@ public class CodePush implements ReactPackage {
                 }
             }
         }
-
         return false;
     }
 
@@ -137,10 +103,6 @@ public class CodePush implements ReactPackage {
     @Deprecated
     public static String getBundleUrl(String assetsBundleFileName) {
         return getJSBundleFile(assetsBundleFileName);
-    }
-
-    public String getDeploymentKey() {
-        return mDeploymentKey;
     }
 
     public static String getJSBundleFile() {
@@ -175,32 +137,17 @@ public class CodePush implements ReactPackage {
                 return binaryJsBundleUrl;
             }
 
-            //todo check here if it will send the old app version bundle for new versions also
+            //get the appVersion of the current js bundle and if it is less than the current appVersion then do not use that
+            JSONObject currentPackage = mUpdateManager.getCurrentPackage();
+            String currentAppVersionInLocalBundle = currentPackage.optString("appVersion", null);
+            if (currentAppVersionInLocalBundle == null || checkForUpdate(currentAppVersionInLocalBundle, sAppVersion))
+                return binaryJsBundleUrl;
+
             return packageFilePath;
         } catch (Exception e) {
             //do nothing for now
         }
         return binaryJsBundleUrl;
-    }
-
-    public String getServerUrl() {
-        return mServerUrl;
-    }
-
-    void invalidateCurrentInstance() {
-        mCurrentInstance = null;
-    }
-
-    boolean isDebugMode() {
-        return mIsDebugMode;
-    }
-
-    public void clearUpdates() {
-        mUpdateManager.clearUpdates();
-    }
-
-    public static void setReactInstanceHolder(ReactInstanceHolder reactInstanceHolder) {
-        mReactInstanceHolder = reactInstanceHolder;
     }
 
     static ReactInstanceManager getReactInstanceManager() {
@@ -227,27 +174,45 @@ public class CodePush implements ReactPackage {
     public List<ViewManager> createViewManagers(ReactApplicationContext reactApplicationContext) {
         return new ArrayList<>();
     }
-}
 
-class CodePushBuilder {
-
-    private String mDeploymentKey;
-    private Context mContext;
-    private boolean mIsDebugMode;
-    private String mServerUrl;
-
-    public CodePushBuilder(String deploymentKey, Context context) {
-        this.mDeploymentKey = deploymentKey;
-        this.mContext = context;
-        this.mServerUrl = CodePush.getServiceUrl();
+    public void clearUpdates() {
+        mUpdateManager.clearUpdates();
     }
 
-    public CodePushBuilder setIsDebugMode(boolean isDebugMode) {
-        this.mIsDebugMode = isDebugMode;
-        return this;
+    void invalidateCurrentInstance() {
+        mCurrentInstance = null;
     }
 
-    public CodePush build() {
-        return new CodePush(this.mDeploymentKey, this.mContext, this.mIsDebugMode);
+    public static void setReactInstanceHolder(ReactInstanceHolder reactInstanceHolder) {
+        mReactInstanceHolder = reactInstanceHolder;
+    }
+
+    public boolean checkForUpdate(String existingVersion, String newVersion) {
+        if (existingVersion.isEmpty() || newVersion.isEmpty()) {
+            return false;
+        }
+
+        existingVersion = existingVersion.replaceAll("\\.", "");
+        newVersion = newVersion.replaceAll("\\.", "");
+
+        int existingVersionLength = existingVersion.length();
+        int newVersionLength = newVersion.length();
+
+        StringBuilder versionBuilder = new StringBuilder();
+        if (newVersionLength > existingVersionLength) {
+            versionBuilder.append(existingVersion);
+            for (int i = existingVersionLength; i < newVersionLength; i++) {
+                versionBuilder.append("0");
+            }
+            existingVersion = versionBuilder.toString();
+        } else if (existingVersionLength > newVersionLength) {
+            versionBuilder.append(newVersion);
+            for (int i = newVersionLength; i < existingVersionLength; i++) {
+                versionBuilder.append("0");
+            }
+            newVersion = versionBuilder.toString();
+        }
+
+        return Integer.parseInt(newVersion) > Integer.parseInt(existingVersion);
     }
 }

@@ -16,7 +16,7 @@ async function checkForUpdate() {
 
   //make the network call to check if we have new updates
   if (localBundleData) {
-    nativeConfig.label = localBundleData.label;
+    nativeConfig.bundleVersion = localBundleData.bundleVersion;
   }
 
   let remoteBundleData = await getRemoteBundleData(nativeConfig);
@@ -25,22 +25,24 @@ async function checkForUpdate() {
 
   remotePackage = null;
 
-  if (remoteBundleData && remoteBundleData.isAvailable) {
+  if (remoteBundleData && remoteBundleData.success) {
     if (localBundleData) {
       if (localBundleData.label != remoteBundleData.label) {
-        console.log('label mismatch');
+        console.log('bundle version mismatch');
         remotePackage = await downloadAndInstallTheRemoteBundle(
           remoteBundleData,
         );
       } else {
         //do nothing
-        console.log('label match');
+        console.log('bundle version match');
       }
     } else {
       //download the latest bundle
       console.log('no local bundle present');
       remotePackage = await downloadAndInstallTheRemoteBundle(remoteBundleData);
     }
+  } else {
+    console.log('no remote bundle present for this appVersion');
   }
 
   console.log('remote package');
@@ -63,35 +65,25 @@ async function downloadAndInstallTheRemoteBundle(remoteBundleData) {
 
 async function getConfiguration() {
   return await NativeCodePush.getConfiguration();
-  // return {
-  //   appVersion: '4.34',
-  //   clientUniqueId: '87ec101c23c4e956',
-  //   deploymentKey: 'izyOaXcmgfBJBhog0nncDYAyFjpgp-1q5UlAg',
-  //   serverUrl: 'https://codepush.appcenter.ms/',
-  // };
 }
 
 //call native function to get the local package data if available
 async function getUpdateMetadata() {
   let updateMetadata = await NativeCodePush.getUpdateMetadata();
-  // updateMetadata = {
-  //   appVersion: '4.34',
-  //   deploymentKey: 'izyOaXcmgfBJBhog0nncDYAyFjpgp-1q5UlAg',
-  //   label: 'v4',
-  //   packageSize: 490782,
-  // };
   return updateMetadata;
 }
 
 //need to write this, make a network call here to check if we have a new bundle on server
 async function getRemoteBundleData(nativeConfig) {
+  console.log(nativeConfig);
   return {
-    downloadUrl:
+    updateDownloadUrl:
       'https://codepushupdates.azureedge.net/storagev2/R8IL6ZJRtTDmbpk6niw-m9_xAW9V8280fa3d-d7c9-453c-a2a8-08f96a8cbd32',
-    description: 'description',
-    isAvailable: true,
+    message: 'message',
+    success: true,
     appVersion: '4.34',
-    label: 'v5',
+    bundleVersion: 'v5',
+    forceUpdate: 1,
     packageSize: 488754,
   };
 }
