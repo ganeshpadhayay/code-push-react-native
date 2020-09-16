@@ -75,11 +75,6 @@ public class CodePushUpdateManager {
         return CodePushUtils.appendPathComponent(getCodePushPath(), packageHash);
     }
 
-    public String getPreviousPackageHash() {
-        JSONObject info = getCurrentPackageInfo();
-        return info.optString(CodePushConstants.PREVIOUS_PACKAGE_KEY, null);
-    }
-
     public JSONObject getCurrentPackage() {
         String packageHash = getCurrentPackageHash();
         if (packageHash == null) {
@@ -121,6 +116,8 @@ public class CodePushUpdateManager {
     }
 
     public void downloadPackage(JSONObject updatePackage, String expectedBundleFileName, DownloadProgressCallback progressCallback) throws IOException {
+        //clear all bundles if downloading new
+        clearUpdates();
         String newUpdateHash = String.valueOf(updatePackage.optInt(CodePushConstants.PACKAGE_LABEL_KEY, -1));
         String newUpdateFolderPath = getPackageFolderPath(newUpdateHash);
         String newUpdateMetadataPath = CodePushUtils.appendPathComponent(newUpdateFolderPath, CodePushConstants.PACKAGE_FILE_NAME);
@@ -250,12 +247,6 @@ public class CodePushUpdateManager {
             return;
         }
 
-        String previousPackageHash = getPreviousPackageHash();
-        if (previousPackageHash != null && !previousPackageHash.equals(packageHash)) {
-            FileUtils.deleteDirectoryAtPath(getPackageFolderPath(previousPackageHash));
-        }
-
-        CodePushUtils.setJSONValueForKey(info, CodePushConstants.PREVIOUS_PACKAGE_KEY, String.valueOf(info.optInt(CodePushConstants.CURRENT_LABEL_KEY, -1)));
         CodePushUtils.setJSONValueForKey(info, CodePushConstants.CURRENT_LABEL_KEY, packageHash);
         updateCurrentPackageInfo(info);
     }

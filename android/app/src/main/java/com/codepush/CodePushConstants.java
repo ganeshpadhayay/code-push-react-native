@@ -7,7 +7,6 @@ public class CodePushConstants {
     public static final int DOWNLOAD_BUFFER_SIZE = 1024 * 256;
     public static final String DOWNLOAD_FILE_NAME = "download.zip";
     public static final String DOWNLOAD_PROGRESS_EVENT_NAME = "CodePushDownloadProgress";
-    public static final String PREVIOUS_PACKAGE_KEY = "previousPackage";
     public static final String REACT_NATIVE_LOG_TAG = "ReactNative";
     public static final String RELATIVE_BUNDLE_PATH_KEY = "bundlePath";
     public static final String UNZIPPED_FOLDER_NAME = "unzipped";
