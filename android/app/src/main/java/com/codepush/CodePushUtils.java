@@ -201,7 +201,7 @@ public class CodePushUtils {
 
     public static String tryGetString(ReadableMap map, String key) {
         try {
-            return map.getString(key);
+            return String.valueOf(map.getInt(key));
         } catch (NoSuchKeyException e) {
             return null;
         }

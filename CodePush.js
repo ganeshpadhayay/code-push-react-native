@@ -20,12 +20,15 @@ async function checkForUpdate() {
   }
 
   let remoteBundleData = await getRemoteBundleData(nativeConfig);
+  remoteBundleData.updateDownloadUrl =
+    `http://125.16.74.160:30626/runtimeAppUpdate/api/` +
+    remoteBundleData.updateDownloadUrl;
   console.log('remoteBundleData');
   console.log(remoteBundleData);
 
   remotePackage = null;
 
-  if (remoteBundleData && remoteBundleData.success) {
+  if (remoteBundleData && remoteBundleData.success === 'true') {
     if (localBundleData) {
       if (localBundleData.label != remoteBundleData.label) {
         console.log('bundle version mismatch');
@@ -77,30 +80,18 @@ async function getUpdateMetadata() {
 async function getRemoteBundleData(nativeConfig) {
   console.log(nativeConfig);
   try {
-    let response = await fetch('https://jsonplaceholder.typicode.com/todos/1', {
-      method: 'GET',
-      headers: {
-        appVersion: nativeConfig.appVersion,
-        platformType: nativeConfig.platformType,
-        bundleVersion: nativeConfig.bundleVersion,
-      },
-    });
+    let url = `http://125.16.74.160:30626/runtimeAppUpdate/api/getLastUpdate?appName=Hive&platformType=${nativeConfig.platformType}&currentAppVersion=${nativeConfig.appVersion}`;
+    if (nativeConfig.bundleVersion) {
+      url = url + `&bundleNumber=${nativeConfig.bundleVersion}`;
+    }
+    console.log(url);
+    let response = await fetch(url, {method: 'GET'});
     let responseJson = await response.json();
     console.log(responseJson);
     return responseJson;
   } catch (error) {
     console.error(error);
   }
-  // return {
-  //   updateDownloadUrl:
-  //     'https://codepushupdates.azureedge.net/storagev2/R8IL6ZJRtTDmbpk6niw-m9_xAW9V8280fa3d-d7c9-453c-a2a8-08f96a8cbd32',
-  //   message: 'message',
-  //   success: true,
-  //   appVersion: '4.34',
-  //   bundleVersion: 'v5',
-  //   forceUpdate: 1,
-  //   packageSize: 488754,
-  // };
 }
 
 let CodePush;

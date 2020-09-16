@@ -44,8 +44,8 @@ public class CodePushUpdateManager {
 
     public String getCurrentPackageFolderPath() {
         JSONObject info = getCurrentPackageInfo();
-        String packageHash = info.optString(CodePushConstants.CURRENT_LABEL_KEY, null);
-        if (packageHash == null) {
+        String packageHash = String.valueOf(info.optInt(CodePushConstants.CURRENT_LABEL_KEY, -1));
+        if (packageHash.equals("-1")) {
             return null;
         }
 
@@ -90,7 +90,7 @@ public class CodePushUpdateManager {
 
     public String getCurrentPackageHash() {
         JSONObject info = getCurrentPackageInfo();
-        return info.optString(CodePushConstants.CURRENT_LABEL_KEY, null);
+        return String.valueOf(info.optInt(CodePushConstants.CURRENT_LABEL_KEY, -1));
     }
 
     public JSONObject getCurrentPackageInfo() {
@@ -121,7 +121,7 @@ public class CodePushUpdateManager {
     }
 
     public void downloadPackage(JSONObject updatePackage, String expectedBundleFileName, DownloadProgressCallback progressCallback) throws IOException {
-        String newUpdateHash = updatePackage.optString(CodePushConstants.PACKAGE_LABEL_KEY, null);
+        String newUpdateHash = String.valueOf(updatePackage.optInt(CodePushConstants.PACKAGE_LABEL_KEY, -1));
         String newUpdateFolderPath = getPackageFolderPath(newUpdateHash);
         String newUpdateMetadataPath = CodePushUtils.appendPathComponent(newUpdateFolderPath, CodePushConstants.PACKAGE_FILE_NAME);
         if (FileUtils.fileAtPathExists(newUpdateFolderPath)) {
@@ -241,11 +241,11 @@ public class CodePushUpdateManager {
     }
 
     public void installPackage(JSONObject updatePackage) {
-        String packageHash = updatePackage.optString(CodePushConstants.PACKAGE_LABEL_KEY, null);
+        String packageHash = String.valueOf(updatePackage.optInt(CodePushConstants.PACKAGE_LABEL_KEY, -1));
         JSONObject info = getCurrentPackageInfo();
 
-        String currentPackageHash = info.optString(CodePushConstants.CURRENT_LABEL_KEY, null);
-        if (packageHash != null && packageHash.equals(currentPackageHash)) {
+        String currentPackageHash = String.valueOf(info.optInt(CodePushConstants.CURRENT_LABEL_KEY, -1));
+        if (!packageHash.equals("-1") && packageHash.equals(currentPackageHash)) {
             // The current package is already the one being installed, so we should no-op.
             return;
         }
@@ -255,7 +255,7 @@ public class CodePushUpdateManager {
             FileUtils.deleteDirectoryAtPath(getPackageFolderPath(previousPackageHash));
         }
 
-        CodePushUtils.setJSONValueForKey(info, CodePushConstants.PREVIOUS_PACKAGE_KEY, info.optString(CodePushConstants.CURRENT_LABEL_KEY, null));
+        CodePushUtils.setJSONValueForKey(info, CodePushConstants.PREVIOUS_PACKAGE_KEY, String.valueOf(info.optInt(CodePushConstants.CURRENT_LABEL_KEY, -1)));
         CodePushUtils.setJSONValueForKey(info, CodePushConstants.CURRENT_LABEL_KEY, packageHash);
         updateCurrentPackageInfo(info);
     }
