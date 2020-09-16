@@ -13,7 +13,7 @@ public class CodePushConstants {
 
     public static final String DOWNLOAD_URL_KEY = "updateDownloadUrl";
     public static final String PACKAGE_LABEL_KEY = "bundleVersion";
-    public static final String CURRENT_LABEL_KEY = "currentLabel";
+    public static final String CURRENT_LABEL_KEY = "currentBundleVersion";
     public static final String PACKAGE_FILE_NAME = "app.json";
     public static final String DEFAULT_JS_BUNDLE_NAME = "index.android.bundle";
     public static final String STATUS_FILE = "codepush.json";

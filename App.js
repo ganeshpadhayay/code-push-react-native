@@ -6,7 +6,7 @@ const App = () => {
   return (
     <>
       <View style={styles.body}>
-        <Text>Hello World</Text>
+        <Text>Hello World Release Test</Text>
       </View>
     </>
   );
