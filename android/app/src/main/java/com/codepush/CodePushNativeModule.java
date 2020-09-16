@@ -71,6 +71,13 @@ public class CodePushNativeModule extends ReactContextBaseJavaModule {
             protected Void doInBackground(Void... params) {
                 try {
                     JSONObject currentPackage = mUpdateManager.getCurrentPackage();
+                    if (currentPackage != null) {
+                        String currentAppVersionInLocalBundle = currentPackage.optString("appVersion", null);
+                        if (mCodePush.checkForUpdate(currentAppVersionInLocalBundle, mCodePush.getAppVersion())) {
+                            promise.resolve(null);
+                            return null;
+                        }
+                    }
                     if (currentPackage == null) {
                         promise.resolve(null);
                         return null;

@@ -23,6 +23,7 @@ async function checkForUpdate() {
   remoteBundleData.updateDownloadUrl =
     `http://125.16.74.160:30626/runtimeAppUpdate/api/` +
     remoteBundleData.updateDownloadUrl;
+  remoteBundleData.appVersion = nativeConfig.appVersion;
   console.log('remoteBundleData');
   console.log(remoteBundleData);
 
@@ -30,7 +31,7 @@ async function checkForUpdate() {
 
   if (remoteBundleData && remoteBundleData.success === 'true') {
     if (localBundleData) {
-      if (localBundleData.label != remoteBundleData.label) {
+      if (localBundleData.bundleVersion != remoteBundleData.bundleVersion) {
         console.log('bundle version mismatch');
         remotePackage = await downloadAndInstallTheRemoteBundle(
           remoteBundleData,
