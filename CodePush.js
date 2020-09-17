@@ -216,3 +216,8 @@ if (NativeCodePush) {
 }
 
 module.exports = CodePush;
+
+/*
+Bundle command for Android:
+react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/res/index.android.bundle && cd ./android && ./gradlew app:assembleRelease
+*/

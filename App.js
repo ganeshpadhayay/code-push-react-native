@@ -8,6 +8,8 @@ const App = () => {
       <View style={styles.body}>
         <Text>Hello World</Text>
         <Text>Testing</Text>
+
+        <Text>Testing Again</Text>
       </View>
     </>
   );
